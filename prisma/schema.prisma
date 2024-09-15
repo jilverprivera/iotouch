@@ -32,6 +32,9 @@ model User {
   secondRoommates          Roommate[]         @relation("secondRoommate")
   roommateRequestsSent     RoommateRequests[] @relation("roommateRequestsSent")
   roommateRequestsReceived RoommateRequests[] @relation("roommateRequestsReceived")
+  typeAreas                TypeArea[]
+  typeControllers          TypeController[]
+  typeDevices              TypeDevice[]
 
   @@index([id])
   @@index([simpleId])
@@ -55,11 +58,13 @@ model Country {
   id           Int          @id @default(autoincrement())
   name         String
   code         String       @unique @db.VarChar(3)
-  prefix       String       @unique @db.VarChar(3)
+  prefix       String       @unique @db.VarChar(16)
   currencyCode String       @unique @map("currency_code") @db.VarChar(3)
   createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamp()
   users        UserDetail[]
 
+  @@index([currencyCode])
+  @@index([prefix])
   @@map("country")
 }
 
@@ -80,6 +85,7 @@ model Project {
   controllers     Controller[]
   areasInProjects AreasInProjects[]
 
+  @@index([id])
   @@index([simpleId])
   @@map("project")
 }
@@ -104,6 +110,8 @@ model Area {
   usersInAreas    UsersInAreas[]
   areasInProjects AreasInProjects[]
 
+  @@index([id])
+  @@index([simpleId])
   @@map("area")
 }
 
@@ -128,6 +136,7 @@ model Controller {
   devices          Device[]
   data             Data[]
 
+  @@index([id])
   @@index([simpleId])
   @@map("controller")
 }
@@ -148,6 +157,7 @@ model Device {
   createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamp()
   updatedAt    DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamp()
 
+  @@index([id])
   @@index([simpleId])
   @@map("device")
 }
@@ -164,32 +174,47 @@ model Data {
 }
 
 model TypeArea {
-  id    String @id @unique @default(uuid())
-  name  String
-  icon  String
-  color String @default("#F5F5F5")
-  areas Area[]
+  id            String  @id @unique @default(uuid())
+  name          String
+  icon          String
+  color         String  @default("#F5F5F5")
+  createdByUser Boolean @default(false) @map("created_by_user")
+  createdBy     User?   @relation(fields: [createdById], references: [id])
+  createdById   String? @map("created_by_id")
+  areas         Area[]
 
+  @@index([id])
+  @@index([createdById])
   @@map("type_area")
 }
 
 model TypeController {
-  id          String       @id @unique @default(uuid())
-  key         String       @unique
-  name        String
-  controllers Controller[]
+  id            String       @id @unique @default(uuid())
+  key           String       @unique
+  name          String
+  createdByUser Boolean      @default(false) @map("created_by_user")
+  createdBy     User?        @relation(fields: [createdById], references: [id])
+  createdById   String?      @map("created_by_id")
+  controllers   Controller[]
 
+  @@index([id])
   @@index([key])
+  @@index([createdById])
   @@map("type_controller")
 }
 
 model TypeDevice {
-  id      String   @id @unique @default(uuid())
-  key     String   @unique
-  label   String
-  devices Device[]
+  id            String   @id @unique @default(uuid())
+  key           String   @unique
+  name          String
+  createdByUser Boolean  @default(false) @map("created_by_user")
+  createdBy     User?    @relation(fields: [createdById], references: [id])
+  createdById   String?  @map("created_by_id")
+  devices       Device[]
 
+  @@index([id])
   @@index([key])
+  @@index([createdById])
   @@map("type_device")
 }
 
