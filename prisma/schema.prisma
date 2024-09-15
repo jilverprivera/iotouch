@@ -13,25 +13,25 @@ enum role {
   VIEWER
 }
 
-enum ControllerType {
-  ESP_32
-  ESP_8266
-  ARDUINO
-}
-
 model User {
-  id          String       @id @unique @default(uuid())
-  simpleId    String       @unique @map("simple_id")
-  fullName    String       @map("full_name")
-  active      Boolean      @default(true)
-  deleted     Boolean      @default(false)
-  lastLogin   DateTime?    @map("last_login")
-  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamp()
-  updatedAt   DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamp()
-  userDetail  UserDetail?
-  projects    Project[]
-  areas       Area[]
-  controllers Controller[]
+  id                       String             @id @unique @default(uuid())
+  fullName                 String             @map("full_name")
+  simpleId                 String             @unique @map("simple_id")
+  email                    String             @unique
+  active                   Boolean            @default(true)
+  deleted                  Boolean            @default(false)
+  lastLogin                DateTime?          @map("last_login")
+  createdAt                DateTime           @default(now()) @map("created_at") @db.Timestamp()
+  updatedAt                DateTime           @default(now()) @updatedAt @map("updated_at") @db.Timestamp()
+  userDetail               UserDetail?
+  projects                 Project[]
+  areas                    Area[]
+  controllers              Controller[]
+  usersInAreas             UsersInAreas[]
+  firstRoommates           Roommate[]         @relation("firstRoommate")
+  secondRoommates          Roommate[]         @relation("secondRoommate")
+  roommateRequestsSent     RoommateRequests[] @relation("roommateRequestsSent")
+  roommateRequestsReceived RoommateRequests[] @relation("roommateRequestsReceived")
 
   @@index([id])
   @@index([simpleId])
@@ -51,166 +51,200 @@ model UserDetail {
   @@map("user_detail")
 }
 
+model Country {
+  id           Int          @id @default(autoincrement())
+  name         String
+  code         String       @unique @db.VarChar(3)
+  prefix       String       @unique @db.VarChar(3)
+  currencyCode String       @unique @map("currency_code") @db.VarChar(3)
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamp()
+  users        UserDetail[]
+
+  @@map("country")
+}
+
 model Project {
-  id          String   @id @unique @default(uuid())
-  simpleId    String   @unique @map("simple_id")
-  name        String
-  description String?
-  active      Boolean  @default(true)
-  deleted     Boolean  @default(false)
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp()
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp()
-  user        User     @relation(fields: [userId], references: [id])
-  userId      String   @map("user_id")
+  id              String            @id @unique @default(uuid())
+  simpleId        String            @unique @map("simple_id")
+  createdBy       User              @relation(fields: [createdById], references: [id])
+  createdById     String            @map("created_by_id")
+  name            String
+  description     String?
+  position        Json?
+  edges           Json?
+  active          Boolean           @default(true)
+  deleted         Boolean           @default(false)
+  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamp()
+  updatedAt       DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamp()
+  areas           Area[]
+  controllers     Controller[]
+  areasInProjects AreasInProjects[]
 
   @@index([simpleId])
   @@map("project")
 }
 
 model Area {
-  id          String       @id @unique @default(uuid())
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId      String       @map("user_id")
-  areaType    AreaType     @relation(fields: [areaTypeId], references: [id], onDelete: Cascade)
-  areaTypeId  String       @map("area_type_id")
-  label       String
-  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamp()
-  updatedAt   DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamp()
-  controllers Controller[]
+  id              String            @id @unique @default(uuid())
+  simpleId        String            @unique @map("simple_id")
+  createdBy       User              @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdById     String            @map("created_by_id")
+  project         Project?          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId       String?           @map("projec_id")
+  typeArea        TypeArea          @relation(fields: [typeAreaId], references: [id], onDelete: Cascade)
+  typeAreaId      String            @map("type_area_id")
+  name            String
+  position        Json?
+  edges           Json?
+  active          Boolean           @default(true)
+  deleted         Boolean           @default(false)
+  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamp()
+  updatedAt       DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamp()
+  controllers     Controller[]
+  usersInAreas    UsersInAreas[]
+  areasInProjects AreasInProjects[]
 
   @@map("area")
 }
 
 model Controller {
-  id             String         @id @unique @default(uuid())
-  controllerType ControllerType @map("controller_type")
-  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId         String         @map("user_id")
-  area           Area?          @relation(fields: [areaId], references: [id], onDelete: Cascade)
-  areaId         String?        @map("area_id")
-  label          String
-  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamp()
-  updatedAt      DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamp()
-  // devices          Device[]
-  // data             Data[]
+  id               String         @id @unique @default(uuid())
+  simpleId         String         @unique @map("simple_id")
+  createdBy        User           @relation(fields: [createdById], references: [id])
+  createdById      String         @map("created_by_id")
+  project          Project?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId        String?        @map("project_id")
+  area             Area?          @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  areaId           String?        @map("area_id")
+  typeController   TypeController @relation(fields: [typeControllerId], references: [id], onDelete: Cascade)
+  typeControllerId String         @map("type_controller_id")
+  name             String
+  position         Json?
+  edges            Json?
+  active           Boolean        @default(true)
+  deleted          Boolean        @default(false)
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamp()
+  updatedAt        DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamp()
+  devices          Device[]
+  data             Data[]
 
+  @@index([simpleId])
   @@map("controller")
 }
 
-model Country {
-  id        Int          @id @default(autoincrement())
-  name      String
-  code      String       @unique @db.VarChar(3)
-  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamp()
-  updatedAt DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamp()
-  users     UserDetail[]
+model Device {
+  id           String      @id @unique @default(uuid())
+  simpleId     String      @unique @map("simple_id")
+  controller   Controller? @relation(fields: [controllerId], references: [id], onDelete: Cascade)
+  controllerId String?     @map("controller_id")
+  typeDevice   TypeDevice  @relation(fields: [typeDeviceId], references: [id], onDelete: Cascade)
+  typeDeviceId String      @map("type_device_id")
+  name         String
+  value        Int?        @default(0)
+  position     Json?
+  edges        Json?
+  active       Boolean     @default(false)
+  deleted      Boolean     @default(false)
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamp()
+  updatedAt    DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamp()
 
-  @@map("country")
+  @@index([simpleId])
+  @@map("device")
 }
 
-model AreaType {
+model Data {
+  id           String     @id @unique @default(uuid())
+  controller   Controller @relation(fields: [controllerId], references: [id])
+  controllerId String     @map("controller_id")
+  data         Json
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamp()
+
+  @@index([controllerId])
+  @@map("data")
+}
+
+model TypeArea {
   id    String @id @unique @default(uuid())
-  label String
+  name  String
   icon  String
   color String @default("#F5F5F5")
   areas Area[]
 
-  @@map("area_type")
+  @@map("type_area")
 }
 
-// model ControllerType {
-//   id          String       @id @unique @default(uuid())
-//   key         String       @unique
-//   label       String
-//   controllers Controller[]
+model TypeController {
+  id          String       @id @unique @default(uuid())
+  key         String       @unique
+  name        String
+  controllers Controller[]
 
-//   @@index([key])
-//   @@map("controller_type")
-// }
+  @@index([key])
+  @@map("type_controller")
+}
 
-// model RoommateRequests {
-//   sender     User     @relation("roommateRequestsSent", fields: [senderId], references: [id])
-//   senderId   String   @map("sender_id")
-//   receiver   User     @relation("roommateRequestsReceived", fields: [receiverId], references: [id])
-//   receiverId String   @map("receiver_id")
-//   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamp()
-//   updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp()
-//   canceled   Boolean  @default(false)
+model TypeDevice {
+  id      String   @id @unique @default(uuid())
+  key     String   @unique
+  label   String
+  devices Device[]
 
-//   @@id([senderId, receiverId])
-//   @@map("roommate_requests")
-// }
+  @@index([key])
+  @@map("type_device")
+}
 
-// model Roommate {
-//   firstRoommate    User     @relation("firstRoommate", fields: [firstRoommateId], references: [id])
-//   firstRoommateId  String   @map("first_roommate_id")
-//   secondRoommate   User     @relation("secondRoommate", fields: [secondRoommateId], references: [id])
-//   secondRoommateId String   @map("secondary_roommate_id")
-//   deleted          Boolean  @default(false)
-//   createdAt        DateTime @default(now()) @map("created_at") @db.Timestamp()
-//   updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp()
+model RoommateRequests {
+  sender     User     @relation("roommateRequestsSent", fields: [senderId], references: [id])
+  senderId   String   @map("sender_id")
+  receiver   User     @relation("roommateRequestsReceived", fields: [receiverId], references: [id])
+  receiverId String   @map("receiver_id")
+  canceled   Boolean  @default(false)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamp()
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp()
 
-//   @@id([firstRoommateId, secondRoommateId])
-//   @@map("roommate")
-// }
+  @@id([senderId, receiverId])
+  @@map("roommate_requests")
+}
 
-// model UserIndividual {
-//   user         User    @relation(fields: [userId], references: [id])
-//   userId       String  @unique @map("user_id")
-//   fullName     String? @map("full_name")
-//   location     String? /// @encrypted
-//   locationHash String? @map("location_hash") /// @encryption:hash(location)
+model Roommate {
+  firstRoommate    User     @relation("firstRoommate", fields: [firstRoommateId], references: [id])
+  firstRoommateId  String   @map("first_roommate_id")
+  secondRoommate   User     @relation("secondRoommate", fields: [secondRoommateId], references: [id])
+  secondRoommateId String   @map("secondary_roommate_id")
+  canceled         Boolean  @default(false)
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamp()
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp()
 
-//   @@id([userId])
-//   @@index([userId])
-//   @@map("user_individual")
-// }
+  @@id([firstRoommateId, secondRoommateId])
+  @@map("roommate")
+}
 
-// model UsersInAreas {
-//   user       User     @relation(fields: [userId], references: [id])
-//   userId     String   @map("user_id")
-//   area       Area     @relation(fields: [areaId], references: [id])
-//   areaId     String   @map("area_id")
-//   role       role     @default(VIEWER)
-//   assignedAt DateTime @default(now()) @map("assigned_at") @db.Timestamp()
-//   updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp()
+model UsersInAreas {
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String   @map("user_id")
+  area       Area     @relation(fields: [areaId], references: [id])
+  areaId     String   @map("area_id")
+  role       role     @default(VIEWER)
+  active     Boolean  @default(true)
+  deleted    Boolean  @default(false)
+  assignedAt DateTime @default(now()) @map("assigned_at") @db.Timestamp()
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp()
 
-//   @@id([userId, areaId])
-//   @@map("users_in_areas")
-// }
+  @@id([userId, areaId])
+  @@map("users_in_areas")
+}
 
-// model DeviceType {
-//   id      String   @id @unique @default(uuid())
-//   key     String   @unique @default("default")
-//   label   String
-//   devices Device[]
+model AreasInProjects {
+  area       Area     @relation(fields: [areaId], references: [id])
+  areaId     String   @map("area_id")
+  project    Project  @relation(fields: [projectId], references: [id])
+  projectId  String   @map("project_id")
+  role       role     @default(VIEWER)
+  active     Boolean  @default(true)
+  deleted    Boolean  @default(false)
+  assignedAt DateTime @default(now()) @map("assigned_at") @db.Timestamp()
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp()
 
-//   @@index([key])
-//   @@map("device_type")
-// }
-
-// model Device {
-//   id           String      @id @unique @default(uuid())
-//   deviceType   DeviceType  @relation(fields: [deviceTypeId], references: [id], onDelete: Cascade)
-//   deviceTypeId String      @map("device_type_id")
-//   controller   Controller? @relation(fields: [controllerId], references: [id], onDelete: Cascade)
-//   controllerId String?     @map("controller_id")
-//   label        String
-//   value        Int?        @default(0)
-//   active       Boolean     @default(false)
-//   createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamp()
-//   updatedAt    DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamp()
-
-//   @@map("device")
-// }
-
-// model Data {
-//   id           String      @id @unique @default(uuid())
-//   controller   Controller? @relation(fields: [controllerId], references: [id])
-//   controllerId String?     @map("controller_id")
-//   data         Json
-//   createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamp()
-
-//   @@index([controllerId])
-//   @@map("data")
-// }
+  @@id([areaId, projectId])
+  @@map("areas_in_projects")
+}
